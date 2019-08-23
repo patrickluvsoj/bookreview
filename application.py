@@ -1,10 +1,11 @@
 import os
 
-from flask import Flask, session, render_template, request
+from flask import Flask, session, render_template, request, redirect, url_for
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from werkzeug.security import check_password_hash, generate_password_hash
+from helpers import login_required
 
 app = Flask(__name__)
 
@@ -23,32 +24,31 @@ db = scoped_session(sessionmaker(bind=engine))
 
 
 @app.route("/", methods=['GET', 'POST'])
-def index():
-    # check if POST
+def login():
     if request.method == 'POST':
         username = request.form.get("username")
-        entered_password = request.form.get("password")
+        password = request.form.get("password")
 
-        # check if password matches
-        stored_password = db.execute("SELECT password FROM users WHERE username = :username", {"username": username}).fetchone()
+        if not username or password:
+            return "Fields are empty"
 
-        print(f'SQL query return value is: {stored_password}')
-        
         # check if username exists
+        stored_password = db.execute("SELECT password FROM users WHERE username = :username", {"username": username}).fetchone()
         if not stored_password:
             return "No user with that username"
 
-        # add to session["user_id"] = username
-        if stored_password == entered_password:
+          # check if password matches
+        if check_password_hash(stored_password[0], password):
+            # add to session["user_id"] = username
             session['user_id'] = username
             return "Login success!"
-        
-        # navigate to book list page
 
         # TODO
+            # Create github repo and add remote
             # ensure login happens
             # check what value returns when SELECT doesn't return anything
             # check return type of SELECT
+            # navigate to book list page
 
     return render_template("login.html")
 
@@ -63,7 +63,7 @@ def regsiter():
         # check fields are not empty
         if not username or not password or not confirmation:
             # error message
-            return f"Fields are empty: {username}, {password}, {confirmation}"
+            return f"Fields are empty"
         
         # check username is unique
         if db.execute("SELECT username FROM users WHERE username = :username", {"username": username}).fetchall():
@@ -73,14 +73,27 @@ def regsiter():
         if confirmation == password:
             pass_hash = generate_password_hash(password)
         else:
-            return "password does not match!"
+            return "Password does not match!"
 
         # store into database
         db.execute("INSERT INTO users (username, password) VALUES (:username, :hash)", {"username": username, "hash": pass_hash})
         db.commit()
 
         # route to login page
-        return render_template("login.html")
+        return redirect(url_for("login"))
 
     return render_template("register.html")
 
+
+    # TODO
+        # Create a DB for book list
+        # Download book list from CSV to SQL
+        # app route for book search
+        # app route for book detail
+        # app route for review submission
+        # SQL db for book review 
+
+@app.route("/search", methods=['GET', 'POST'])
+@login_required
+def search():
+    return render_template("search.html")
