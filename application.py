@@ -9,6 +9,14 @@ from helpers import login_required
 
 app = Flask(__name__)
 
+# TODO
+    # Create a DB for book list
+    # Download book list from CSV to SQL
+    # app route for book search
+    # app route for book detail
+    # app route for review submission
+    # SQL db for book review 
+
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
@@ -29,7 +37,7 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        if not username or password:
+        if not username or not password:
             return "Fields are empty"
 
         # check if username exists
@@ -41,7 +49,7 @@ def login():
         if check_password_hash(stored_password[0], password):
             # add to session["user_id"] = username
             session['user_id'] = username
-            return "Login success!"
+            return redirect(url_for("search"))
 
         # TODO
             # Create github repo and add remote
@@ -85,15 +93,15 @@ def regsiter():
     return render_template("register.html")
 
 
-    # TODO
-        # Create a DB for book list
-        # Download book list from CSV to SQL
-        # app route for book search
-        # app route for book detail
-        # app route for review submission
-        # SQL db for book review 
-
 @app.route("/search", methods=['GET', 'POST'])
 @login_required
 def search():
+    # Create the SQL database table TODO
+    # download csv file into SQL writing an import function DONE
+    # Query db based on search term w/ LIKE matches
+    # Render list based on Jinja using Jquery
+    # Redicre and render book detail page
+    # Submit review and render review list using Jquery and Jinja
+
+
     return render_template("search.html")
