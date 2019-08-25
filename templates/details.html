@@ -4,16 +4,66 @@
   {{ super() }}
 {% endblock %}
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Home</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-</nav>
 <div class="container">
-    <form>
-        <input type="text">
-        <input type="submit">
-    </form>
+  <H3>{{title}}</H3>
+  <table class="table">
+      <thead class='thead-dark'>
+        <tr>
+          <th scope="col">Details</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Author</th>
+          <td>{{result[0]}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Year</th>
+          <td>{{result[1]}}</td>
+        </tr>
+        <tr>
+          <th scope="row">ISBN</th>
+          <td>{{result[2]}}</td>
+        </tr>
+        <tr>
+            <th scope="row">Goodreads</th>
+            <td>AVG rating: {{goodreads[0]}} / Review count: {{goodreads[1]}}</td>
+            <td>{</td>
+          </tr>
+        <tr>
+          <th class='thead-dark' scope="row" colspan="2">Reviews</th>
+          <table class="table">
+            <tbody>
+              {% for rating in ratings %}
+                <tr>
+                  <td>{{rating[0]}}</td>
+                  <td>{{rating[1]}}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </tr>
+      </tbody>
+    </table>
+    <div class="col-6">
+      <form action="details={{title}}" method='POST'>
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text">Rating</span>
+            </div>
+            <input type="number" name='rating' class="form-control" aria-label="Rating" min='1' max='5'>
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">Comment</span>
+          </div>
+          <textarea class="form-control" name='comment' aria-label="With textarea"></textarea>
+        </div>
+        <div class="input-group mb-3">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div> 
+      </form>
+    </div>
 </div>
 {% endblock %}

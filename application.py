@@ -1,4 +1,4 @@
-import os
+import os, requests, json
 
 from flask import Flask, session, render_template, request, redirect, url_for
 from flask_session import Session
@@ -8,14 +8,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import login_required
 
 app = Flask(__name__)
-
-# TODO
-    # Create a DB for book list
-    # Download book list from CSV to SQL
-    # app route for book search
-    # app route for book detail
-    # app route for review submission
-    # SQL db for book review 
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
@@ -29,6 +21,7 @@ Session(app)
 # Set up database
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
+
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -51,14 +44,8 @@ def login():
             session['user_id'] = username
             return redirect(url_for("search"))
 
-        # TODO
-            # Create github repo and add remote
-            # ensure login happens
-            # check what value returns when SELECT doesn't return anything
-            # check return type of SELECT
-            # navigate to book list page
-
     return render_template("login.html")
+
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -93,15 +80,83 @@ def regsiter():
     return render_template("register.html")
 
 
+
+@app.route("/logout")
+def logout():
+    # logout session and redirect to login
+    session.clear()
+    return redirect(url_for("login"))
+
+
+
 @app.route("/search", methods=['GET', 'POST'])
 @login_required
 def search():
-    # Create the SQL database table TODO
-    # download csv file into SQL writing an import function DONE
-    # Query db based on search term w/ LIKE matches
-    # Render list based on Jinja using Jquery
-    # Redicre and render book detail page
-    # Submit review and render review list using Jquery and Jinja
+    if request.method == 'POST':
+        search = request.form.get('search')
+        results = db.execute("SELECT title FROM books WHERE author LIKE(:author) OR title LIKE(:title) OR isbn LIKE(:isbn)",
+        {'author': search+'%', 'title': search+'%', 'isbn': search+'%'}).fetchall()
+
+        return render_template('search.html', results=results)
 
 
     return render_template("search.html")
+
+
+
+@app.route("/details=<string:title>", methods=['GET', 'POST'])
+@login_required
+def details(title):
+    # book details
+    result = db.execute("SELECT author, yr, isbn FROM books WHERE title = :title", {'title': title}).fetchone()
+
+    # get Goodread api response
+    params ={'isbns': result[2],
+            'key': 'nijqZdzaC9cIsNH2X0haA'}
+    json_response = requests.get('https://www.goodreads.com/book/review_counts.json', params=params).json()
+    goodreads = []
+    avg_rating = json_response['books'][0]['average_rating']
+    review_count = json_response['books'][0]['ratings_count']
+    goodreads.append(avg_rating)
+    goodreads.append(review_count)
+
+
+    if request.method == 'POST':
+        rating = request.form.get('rating')
+        comment = request.form.get('comment')
+        
+        # store ratings into SQL
+        db.execute("INSERT INTO reviews (rating, comment, isbn) VALUES (:rating, :comment, :isbn)", {'rating': rating, 'comment': comment, 'isbn': result[2]})
+        db.commit()
+        
+        # query ratings
+        ratings = db.execute("SELECT rating, comment FROM reviews WHERE isbn = :isbn", {'isbn': result[2]}).fetchall()
+
+        return render_template("details.html", result=result, title=title, ratings=ratings, goodreads=goodreads)
+
+    # query ratings
+    ratings = db.execute("SELECT rating, comment FROM reviews WHERE isbn = :isbn", {'isbn': result[2]}).fetchall()
+
+    return render_template("details.html", result=result, title=title, ratings=ratings, goodreads=goodreads)
+
+
+@app.route("/api=<string:isbn>")
+def api(isbn):
+    # get book details
+    result = db.execute("SELECT title, author, yr FROM books WHERE isbn = :isbn", {'isbn': isbn}).fetchone()
+
+    # get goodreads data
+    params = {'isbns': isbn, 'key': 'nijqZdzaC9cIsNH2X0haA'}
+    response = requests.get('https://www.goodreads.com/book/review_counts.json', params=params).json()
+
+    # prepare data and convert to json string
+    json_response = json.dumps({"title": result[0],
+        "author": result[1],
+        "year": result[2],
+        "isbn": isbn,
+        "review_count": response['books'][0]['ratings_count'],
+        "average_count": response['books'][0]['average_rating']
+    })
+
+    # return json_response
+    return json_response

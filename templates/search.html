@@ -5,10 +5,20 @@
 {% endblock %}
 {% block content %}
 <div class="container">
-    <h3>Search a book!</h3>
-    <form>
-        <input type="text">
-        <input type="submit">
+    <h3>Search a book!</h3><br>
+    <form action="{{url_for('search')}}" method='POST'>
+      <div class="form-group">
+        <label for="searchbar">Search: </label>
+        <input type="text" name='search' placeholder="Search by author, title, isbn">
+      </div>  
+      <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+    <br>
+    <h3>Search results:</h3>
+    <ul>
+      {% for item in results %}
+        <a href='details={{item[0]}}'>{{item[0]}}</a>
+      {% endfor %}
+    </ul>
 </div>
 {% endblock %}
